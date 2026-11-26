@@ -27,7 +27,9 @@ self.addEventListener("notificationclick", e => {
   e.notification.close();
   const d = e.notification.data || {};
   const toApp = e.action === "app" || !d.url;
-  const url = toApp ? self.registration.scope + "#notes" : d.url;
+  // 커맨드센터 안드로이드 앱(APK)이 있으면 그 앱에서 바로 열기 (없으면 브라우저로)
+  const h = (String(d.url || "").split("#")[1] || "").replace(/^go-/, "") || (d.kind === "meeting" ? "meeting" : "");
+  const url = toApp ? self.registration.scope + "#notes" : self.registration.scope + "open.html?h=" + encodeURIComponent(h) + "&u=" + encodeURIComponent(d.url);
   e.waitUntil((async () => {
     // 읽음 처리는 알림 앱이 열릴 때 함께
     try { const cs = await self.clients.matchAll({ type: "window" }); cs.forEach(c => c.postMessage({ type: "read", id: d.id })); } catch (_) {}

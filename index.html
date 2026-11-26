@@ -82,7 +82,13 @@ function updateBadge(){
   const a = $("#n-notes"), b = $("#n-dec"); a.hidden = !un; a.textContent = un; b.hidden = !dc; b.textContent = dc;
   try { if (navigator.setAppBadge) un ? navigator.setAppBadge(un) : navigator.clearAppBadge(); } catch(e){}
 }
-function openCC(url){ location.href = url || window._cc || CC_URL; }
+function openCC(url){
+  const u = url || window._cc || CC_URL;
+  const h = (String(u).split("#")[1] || "").replace(/^go-/, "").replace(/[^A-Za-z0-9_-]/g,"");
+  let pref = ""; try { pref = localStorage.getItem("cc_open") || ""; } catch(e){}
+  if (pref === "web") { location.href = u; return; }
+  location.href = "intent://open?h=" + encodeURIComponent(h) + "#Intent;scheme=commandcenter;package=com.ratels.commandcenter;S.browser_fallback_url=" + encodeURIComponent(u) + ";end";
+}
 async function pushState(){
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
   if (Notification.permission === "denied") return "denied";
@@ -125,6 +131,8 @@ function render(){
   } else if (tab==="set"){
     h += `<div class="card"><div class="dq">알림</div><div id="pstate" class="ctx">확인 중…</div><button class="big" id="pon">이 폰에서 알림 켜기</button><button class="big gray" id="ptest">테스트 알림 보내기</button></div>
       <div class="card"><div class="dq">방해 금지 시간</div><div class="ctx">이 시간엔 일반 보고 알림을 보내지 않아요(결정 회의·긴급은 예외).</div><div class="row" style="margin-top:10px"><input id="qs" value="${esc((feed.quiet||{}).start||"00:30")}"><span>~</span><input id="qe" value="${esc((feed.quiet||{}).end||"07:30")}"></div><button class="big" id="qsave">저장</button></div>
+      <div class="card"><div class="dq">커맨드센터 앱 (APK)</div><div class="ctx">알림을 누르면 이 앱에서 바로 그 채팅방이 열려요. 휴대폰 크롬에서 GitHub에 로그인한 상태로 아래 버튼을 누르면 받아져요.</div><a class="big" style="display:block;text-align:center;text-decoration:none" href="https://github.com/leon0107gemini-dotcom/command-center-app/raw/main/dist/CommandCenter.apk">앱 받기 (최신 버전)</a>
+        <div class="row" style="margin-top:10px"><span style="flex:none;font-size:14px">알림 누르면</span><select id="openpref"><option value="">커맨드센터 앱으로 열기</option><option value="web">브라우저로 열기</option></select></div></div>
       <div class="card"><div class="ctx">설치: 크롬 메뉴(⋮) → '홈 화면에 추가' 또는 '앱 설치'. 설치한 앱에서 알림을 켜면 '커맨드센터' 이름으로 와요.</div></div>`;
   }
   m.innerHTML = h;
@@ -138,6 +146,7 @@ function bind(){
   const sg = $("#sgo"); if (sg) sg.onclick = async ()=>{ const t = $("#stext").value.trim(); if (!t) return; sg.disabled = true; try { await api("send", {text:t, room:$("#sroom").value}); $("#stext").value = ""; toast("보냈어요"); } catch(e){ toast("보내지 못했어요: "+e.message); } sg.disabled = false; };
   const pon = $("#pon"); if (pon) { pon.onclick = enablePush; pushState().then(s=>{ const el = $("#pstate"); if (el) el.textContent = {on:"✅ 이 폰에서 알림이 켜져 있어요", off:"아직 꺼져 있어요. 아래 버튼을 누르세요", denied:"알림이 차단돼 있어요. 휴대폰 설정 → 앱 → 크롬(또는 커맨드센터) → 알림에서 허용해 주세요", unsupported:"이 브라우저는 알림을 지원하지 않아요. 크롬으로 열어 주세요"}[s]; if (s==="on") pon.textContent = "알림 다시 연결"; }); }
   const pt = $("#ptest"); if (pt) pt.onclick = async ()=>{ try { await api("test", {}); toast("테스트 알림 보냈어요"); setTimeout(load, 2500); } catch(e){ toast("실패: "+e.message); } };
+  const op = $("#openpref"); if (op){ try { op.value = localStorage.getItem("cc_open") || ""; } catch(e){} op.onchange = ()=>{ try { localStorage.setItem("cc_open", op.value); } catch(e){} toast("저장했어요"); }; }
   const qs = $("#qsave"); if (qs) qs.onclick = async ()=>{ try { await api("quiet", {start:$("#qs").value.trim(), end:$("#qe").value.trim()}); toast("저장했어요"); } catch(e){ toast("HH:MM 형식으로 써 주세요"); } };
   const pb = $("#pushban"); if (pb) pushState().then(s=>{ if (s!=="on") { pb.innerHTML = `<div class="banner">이 폰에서 알림이 아직 꺼져 있어요.<br><button type="button" id="banon">알림 켜기</button></div>`; $("#banon").onclick = enablePush; } });
 }

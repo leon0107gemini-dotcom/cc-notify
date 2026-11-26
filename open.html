@@ -1,0 +1,13 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1f2328"><title>커맨드센터 여는 중</title>
+<style>body{margin:0;background:#1f2328;color:#fff;font:16px/1.5 -apple-system,"Noto Sans KR",sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}.b{text-align:center;padding:24px;max-width:360px}a{display:block;margin:12px 0;padding:15px;border-radius:14px;text-decoration:none;font-weight:700}.a{background:#f5c542;color:#111}.w{background:rgba(255,255,255,.12);color:#fff}img{width:64px;border-radius:14px}</style></head>
+<body><div class="b"><img src="icon-192.png" alt=""><p>커맨드센터 앱을 여는 중…</p><a class="a" id="app">커맨드센터 앱에서 열기</a><a class="w" id="web">브라우저로 열기</a></div>
+<script>
+const q=new URLSearchParams(location.search);const h=(q.get("h")||"").replace(/[^A-Za-z0-9_-]/g,"");
+const web=/^https:\/\/claude\.ai\//.test(q.get("u")||"")?q.get("u"):"https://claude.ai/artifact/5gM8bXoAzE18Tv39yWsAkx";
+const intent="intent://open?h="+encodeURIComponent(h)+"#Intent;scheme=commandcenter;package=com.ratels.commandcenter;S.browser_fallback_url="+encodeURIComponent(web)+";end";
+document.getElementById("app").href=intent;document.getElementById("web").href=web;
+let pref="";try{pref=localStorage.getItem("cc_open")||"";}catch(e){}
+if(pref==="web")location.replace(web);else setTimeout(()=>location.href=intent,60);
+document.getElementById("web").onclick=()=>{try{localStorage.setItem("cc_open","web")}catch(e){}};
+document.getElementById("app").onclick=()=>{try{localStorage.setItem("cc_open","app")}catch(e){}};
+</script></body></html>
