@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f2328">
+<title>커맨드센터 알림</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--ink:#16181c;--mute:#6b7280;--line:#e5e7eb;--accent:#2f7d6b;--red:#b3261e;--yellow:#f5c542}
+@media (prefers-color-scheme:dark){:root{--bg:#15171b;--panel:#1f2328;--ink:#eceef1;--mute:#9aa1ab;--line:#2c3138}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+header{position:sticky;top:0;z-index:5;background:#1f2328;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:10px}
+header img{width:30px;height:30px;border-radius:8px}header b{font-size:17px;flex:1}
+header button{border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:7px 12px;font-size:13px}
+nav{position:sticky;top:calc(52px + env(safe-area-inset-top));z-index:4;display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
+nav button{flex:1;border:0;background:transparent;color:var(--mute);padding:12px 0;font-size:14.5px;font-weight:600;position:relative}
+nav button.on{color:var(--ink);box-shadow:inset 0 -3px 0 var(--accent)}
+nav .n{position:absolute;top:6px;margin-left:4px;background:var(--red);color:#fff;border-radius:999px;font-size:11px;padding:0 6px}
+main{padding:12px 12px calc(90px + env(safe-area-inset-bottom));max-width:680px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-bottom:10px}
+.note{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.note.unread{border-left:5px solid var(--accent)}
+.note .t{font-weight:700;font-size:15px}.note .b{font-size:14px;color:var(--ink);opacity:.85;margin-top:2px;word-break:keep-all}
+.note .m{font-size:12px;color:var(--mute);margin-top:4px}
+.note .ic{font-size:20px;line-height:1.2}
+.dq{font-size:17px;font-weight:700;line-height:1.4;word-break:keep-all}
+.ctx{font-size:13.5px;color:var(--mute);margin-top:6px}
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.opts button{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:12px;padding:12px 14px;text-align:left;font-size:15px}
+.opts button.rec{border-color:var(--accent);background:rgba(47,125,107,.12);font-weight:650}
+.who{font-size:12.5px;color:var(--mute);margin-bottom:6px}
+.todo{display:flex;gap:10px;align-items:center;padding:11px 14px;border-top:1px solid var(--line)}
+.todo:first-child{border-top:0}.todo .d{flex:none;font-size:12px;border-radius:999px;padding:2px 9px;background:rgba(0,0,0,.07)}
+.todo .d.late{background:rgba(179,38,30,.12);color:var(--red)}.todo .d.today{background:rgba(245,197,66,.25)}
+.todo small{display:block;color:var(--mute);font-size:12px}
+.empty{text-align:center;color:var(--mute);padding:40px 10px}
+textarea,select,input{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+textarea{min-height:120px;resize:vertical}
+.big{width:100%;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;padding:14px;margin-top:10px}
+.big.gray{background:#4b5563}
+.hint{font-size:12.5px;color:var(--mute);margin-top:8px}
+.banner{background:var(--yellow);color:#111;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:14px}
+.banner button{margin-top:8px;border:0;background:#111;color:#fff;border-radius:10px;padding:9px 14px;font-weight:700}
+.row{display:flex;gap:8px;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111;color:#fff;border-radius:12px;padding:10px 16px;font-size:14px;display:none;z-index:20}
+.fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));border:0;border-radius:999px;background:var(--yellow);color:#111;font-weight:800;padding:14px 18px;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<header><img src="icon-192.png" alt=""><b>커맨드센터</b><button id="open-cc" type="button">커맨드센터 열기</button></header>
+<nav>
+  <button type="button" data-tab="notes" class="on">알림<span class="n" id="n-notes" hidden></span></button>
+  <button type="button" data-tab="dec">결정<span class="n" id="n-dec" hidden></span></button>
+  <button type="button" data-tab="todo">할 일</button>
+  <button type="button" data-tab="send">보내기</button>
+  <button type="button" data-tab="set">설정</button>
+</nav>
+<main id="main"></main>
+<div class="toast" id="toast"></div>
+<script>
+const API = "https://neufqzrnvwjblcwbeqdn.supabase.co/functions/v1/cc-notify";
+const CC_URL = "https://claude.ai/artifact/5gM8bXoAzE18Tv39yWsAkx";
+let K = "";
+try { const m = location.hash.match(/k=([0-9a-f]{16,})/); if (m) { localStorage.setItem("cc_k", m[1]); history.replaceState(null, "", location.pathname + "#notes"); } K = localStorage.getItem("cc_k") || ""; } catch (e) {}
+const ROOMS = {chief:"비서실장", all:"비서실장"};
+let feed = {notes:[], decisions:[], todos:[]}, tab = (location.hash.slice(1).replace(/[^a-z]/g,"") || "notes");
+if (!["notes","dec","todo","send","set"].includes(tab)) tab = "notes";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const toast = t => { const el = $("#toast"); el.textContent = t; el.style.display = "block"; clearTimeout(toast._t); toast._t = setTimeout(()=> el.style.display = "none", 2200); };
+const ago = iso => { const s = (Date.now() - Date.parse(iso)) / 1000; if (s < 60) return "방금"; if (s < 3600) return Math.floor(s/60) + "분 전"; if (s < 86400) return Math.floor(s/3600) + "시간 전"; return new Date(iso).toLocaleDateString("ko-KR", {month:"numeric", day:"numeric"}); };
+async function api(a, body){
+  const r = await fetch(`${API}?a=${a}&k=${encodeURIComponent(K)}`, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body)} : {});
+  const j = await r.json().catch(()=>({})); if (!r.ok) throw new Error(j.error || r.status); return j;
+}
+async function load(){ if (!K) return render(); try { feed = await api("feed"); if (feed.app_url) window._cc = feed.app_url; } catch(e){ toast("불러오지 못했어요: " + e.message); } render(); updateBadge(); }
+function updateBadge(){
+  const un = feed.notes.filter(n=>!n.read_at).length, dc = feed.decisions.length;
+  const a = $("#n-notes"), b = $("#n-dec"); a.hidden = !un; a.textContent = un; b.hidden = !dc; b.textContent = dc;
+  try { if (navigator.setAppBadge) un ? navigator.setAppBadge(un) : navigator.clearAppBadge(); } catch(e){}
+}
+function openCC(url){ location.href = url || window._cc || CC_URL; }
+async function pushState(){
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
+  if (Notification.permission === "denied") return "denied";
+  const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription();
+  return sub && Notification.permission === "granted" ? "on" : "off";
+}
+const b64u = s => { const p = "=".repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from([...r].map(c=>c.charCodeAt(0))); };
+async function enablePush(){
+  try {
+    const perm = await Notification.requestPermission(); if (perm !== "granted") { toast("알림이 허용되지 않았어요"); return render(); }
+    const reg = await navigator.serviceWorker.ready; const {key} = await api("vapid");
+    let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(key)});
+    await api("subscribe", {sub: sub.toJSON(), ua: navigator.userAgent});
+    toast("알림 켜졌어요"); render();
+  } catch(e){ toast("알림을 켜지 못했어요: " + e.message); }
+}
+function render(){
+  document.querySelectorAll("nav button").forEach(b=> b.classList.toggle("on", b.dataset.tab===tab));
+  const m = $("#main");
+  if (!K){ m.innerHTML = `<div class="card"><div class="dq">연결 코드가 필요해요</div><div class="ctx">커맨드센터가 보내 준 설치 링크로 다시 열거나, 코드를 붙여 넣으세요.</div><input id="kin" placeholder="연결 코드" style="margin-top:10px"><button class="big" id="ksave">연결</button></div>`; $("#ksave").onclick = ()=>{ const v = $("#kin").value.trim(); if (v){ localStorage.setItem("cc_k", v); K = v; load(); } }; return; }
+  let h = "";
+  if (tab==="notes"){
+    h += `<div id="pushban"></div>`;
+    if (!feed.notes.length) h += `<div class="empty">아직 알림이 없어요</div>`;
+    else { h += `<div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="big gray" id="readall" style="width:auto;margin:0;padding:8px 14px;font-size:13px">모두 읽음</button></div>`;
+      h += feed.notes.map(n=>`<div class="card note ${n.read_at?"":"unread"}" data-id="${n.id}" data-url="${esc(n.url)}"><div class="ic">${n.kind==="meeting"?"🗳":n.kind==="urgent"?"⚠️":"💬"}</div><div style="flex:1;min-width:0"><div class="t">${esc(n.title)}</div><div class="b">${esc(n.body)}</div><div class="m">${esc(ago(n.at))}</div></div></div>`).join(""); }
+  } else if (tab==="dec"){
+    if (!feed.decisions.length) h += `<div class="empty">지금 정할 것이 없어요 ✅</div>`;
+    h += feed.decisions.map(d=>{ const opts = Array.isArray(d.options) ? d.options : []; return `<div class="card" data-did="${esc(d.id)}"><div class="who">${esc(d.staff||ROOMS[d.room]||d.room)}${d.deadline?` · ${esc(new Date(d.deadline).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"numeric"}))}까지`:""}</div><div class="dq">${esc(d.question)}</div>${d.context?`<div class="ctx">${esc(d.context)}</div>`:""}${d.kind==="meeting"?`<button class="big" data-meet="${esc(d.room)}">회의하러 가기 (대화로 정해요)</button>`:`<div class="opts">${opts.map(o=>`<button type="button" class="${o===d.recommended?"rec":""}" data-ans="${esc(o)}">${o===d.recommended?"👍 추천 · ":""}${esc(o)}</button>`).join("")}</div>`}</div>`; }).join("");
+    if (feed.decisions.length) h += `<div class="hint">고른 결정은 커맨드센터 담당자에게 바로 전달돼요. 담당자는 커맨드센터가 열려 있을 때(또는 상시 처리기가 돌 때) 이어서 일해요.</div>`;
+  } else if (tab==="todo"){
+    const t = feed.todos || [], td = feed.today;
+    if (!t.length) h += `<div class="empty">이번 주 남은 할 일이 없어요</div>`;
+    else h += `<div class="card" style="padding:0">${t.map(w=>{ const late = w.day < td, today = w.day===td; return `<div class="todo"><span class="d ${late?"late":today?"today":""}">${late?"밀림":today?"오늘":esc(new Date(w.day+"T00:00:00+09:00").toLocaleDateString("ko-KR",{weekday:"short", day:"numeric"}))}</span><div style="flex:1;min-width:0">${esc(w.title)}<small>${esc([w.grp, w.due?"마감 "+w.due:""].filter(Boolean).join(" · "))}</small></div></div>`; }).join("")}</div><div class="hint">완료 체크는 커맨드센터 업무일지에서 해 주세요.</div>`;
+  } else if (tab==="send"){
+    h += `<div class="card"><div class="dq">빠른 지시</div><div class="ctx">이동 중에 생각난 걸 남기면 담당자에게 넘어가요. 키보드의 🎤로 말해도 돼요.</div>
+      <select id="sroom" style="margin-top:10px"><option value="chief">비서실장 (알아서 나눠 줘요)</option></select>
+      <textarea id="stext" placeholder="예: 내일 오전 새활용 발표자료 최종본 다시 보자고 알려 줘" style="margin-top:8px"></textarea>
+      <button class="big" id="sgo">보내기</button><div class="hint">답장은 커맨드센터가 열릴 때(또는 상시 처리기가 돌 때) 채팅방으로 와요.</div></div>`;
+  } else if (tab==="set"){
+    h += `<div class="card"><div class="dq">알림</div><div id="pstate" class="ctx">확인 중…</div><button class="big" id="pon">이 폰에서 알림 켜기</button><button class="big gray" id="ptest">테스트 알림 보내기</button></div>
+      <div class="card"><div class="dq">방해 금지 시간</div><div class="ctx">이 시간엔 일반 보고 알림을 보내지 않아요(결정 회의·긴급은 예외).</div><div class="row" style="margin-top:10px"><input id="qs" value="${esc((feed.quiet||{}).start||"00:30")}"><span>~</span><input id="qe" value="${esc((feed.quiet||{}).end||"07:30")}"></div><button class="big" id="qsave">저장</button></div>
+      <div class="card"><div class="ctx">설치: 크롬 메뉴(⋮) → '홈 화면에 추가' 또는 '앱 설치'. 설치한 앱에서 알림을 켜면 '커맨드센터' 이름으로 와요.</div></div>`;
+  }
+  m.innerHTML = h;
+  bind();
+}
+function bind(){
+  document.querySelectorAll(".note").forEach(el=> el.onclick = async ()=>{ const id = Number(el.dataset.id); try { await api("read", {ids:[id]}); } catch(e){} openCC(el.dataset.url); });
+  const ra = $("#readall"); if (ra) ra.onclick = async ()=>{ await api("read", {all:true}).catch(()=>{}); load(); };
+  document.querySelectorAll("[data-ans]").forEach(b=> b.onclick = async ()=>{ const c = b.closest("[data-did]"); c.querySelectorAll("button").forEach(x=>x.disabled = true); try { const r = await api("answer", {id:c.dataset.did, answer:b.dataset.ans}); toast(r.ok ? "결정 전달했어요" : "이미 정해진 결정이에요"); } catch(e){ toast("전달 실패: "+e.message); } load(); });
+  document.querySelectorAll("[data-meet]").forEach(b=> b.onclick = ()=> openCC((window._cc||CC_URL) + "#go-r-" + b.dataset.meet));
+  const sg = $("#sgo"); if (sg) sg.onclick = async ()=>{ const t = $("#stext").value.trim(); if (!t) return; sg.disabled = true; try { await api("send", {text:t, room:$("#sroom").value}); $("#stext").value = ""; toast("보냈어요"); } catch(e){ toast("보내지 못했어요: "+e.message); } sg.disabled = false; };
+  const pon = $("#pon"); if (pon) { pon.onclick = enablePush; pushState().then(s=>{ const el = $("#pstate"); if (el) el.textContent = {on:"✅ 이 폰에서 알림이 켜져 있어요", off:"아직 꺼져 있어요. 아래 버튼을 누르세요", denied:"알림이 차단돼 있어요. 휴대폰 설정 → 앱 → 크롬(또는 커맨드센터) → 알림에서 허용해 주세요", unsupported:"이 브라우저는 알림을 지원하지 않아요. 크롬으로 열어 주세요"}[s]; if (s==="on") pon.textContent = "알림 다시 연결"; }); }
+  const pt = $("#ptest"); if (pt) pt.onclick = async ()=>{ try { await api("test", {}); toast("테스트 알림 보냈어요"); setTimeout(load, 2500); } catch(e){ toast("실패: "+e.message); } };
+  const qs = $("#qsave"); if (qs) qs.onclick = async ()=>{ try { await api("quiet", {start:$("#qs").value.trim(), end:$("#qe").value.trim()}); toast("저장했어요"); } catch(e){ toast("HH:MM 형식으로 써 주세요"); } };
+  const pb = $("#pushban"); if (pb) pushState().then(s=>{ if (s!=="on") { pb.innerHTML = `<div class="banner">이 폰에서 알림이 아직 꺼져 있어요.<br><button type="button" id="banon">알림 켜기</button></div>`; $("#banon").onclick = enablePush; } });
+}
+document.querySelectorAll("nav button").forEach(b=> b.onclick = ()=>{ tab = b.dataset.tab; history.replaceState(null, "", "#"+tab); render(); });
+$("#open-cc").onclick = ()=> openCC();
+if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js"); navigator.serviceWorker.addEventListener("message", e=>{ if (e.data && e.data.type==="refresh") load(); }); }
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="visible") load(); });
+load(); setInterval(load, 60000);
+</script>
+</body>
+</html>
